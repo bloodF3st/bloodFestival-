@@ -1,6 +1,6 @@
 # bloodFestival
 
-Telegram-бот на базе Bot API (token-режим). Только для авторизованных администраторов.
+Telegram-бот на базе Bot API (token).
 
 ## Команды
 
