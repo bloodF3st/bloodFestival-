@@ -30,7 +30,7 @@ chmod +x blood-festival-bot
 ./blood-festival-bot
 ```
 
-Или через systemd / docker — см. ниже.
+Или через systemd — см. ниже.
 
 ## Переменные окружения
 
@@ -87,18 +87,5 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-```
-
-## Сборка
-
-Исходный код закрыт. Бинарник собран с:
-
-```toml
-[profile.release]
-strip = true
-opt-level = 3
-lto = true
-codegen-units = 1
-panic = "abort"
 ```
 
