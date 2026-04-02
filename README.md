@@ -38,7 +38,7 @@ chmod +x blood-festival-bot
 |---|---|---|
 | `BOT_TOKEN` | ✅ | Токен бота от @BotFather |
 | `ADMINS_TGID` | ✅ | Telegram ID админов через запятую (напр. `123456,789012`) |
-| `TOKEN_DATABASE_URL` | ☑️ | PostgreSQL URL для БД бота (без БД задачи не сохраняются между перезапусками) |
+| `TOKEN_DATABASE_URL` | ☑️ | Путь к SQLite файлу (напр. `sqlite://data/bot.db`) — без БД задачи не сохраняются между перезапусками |
 | `DATABASE_URL` | ☑️ | Запасной вариант если `TOKEN_DATABASE_URL` не задан |
 | `BF_SESSION_NAME` | ❌ | Имя сессии в БД (по умолч. `bloodfestival`) |
 | `USER_TEMPLATES_DIR` | ❌ | Папка с шаблонами `.txt` (по умолч. `data/user_templates`) |
@@ -51,7 +51,7 @@ chmod +x blood-festival-bot
 
 - **OS**: Linux x86_64 (Ubuntu 20.04+, Debian 11+)
 - **glibc**: ≥ 2.31
-- **PostgreSQL**: 13+ (опционально, для персистентности задач)
+- **SQLite**: встроена в бинарник, ничего устанавливать не нужно
 
 ## Стек
 
@@ -59,7 +59,7 @@ chmod +x blood-festival-bot
 |---|---|---|
 | [teloxide](https://github.com/teloxide/teloxide) | 0.12 | Telegram Bot API фреймворк |
 | [tokio](https://tokio.rs) | 1 | Async runtime (multi-thread) |
-| [sqlx](https://github.com/launchbadge/sqlx) | 0.8 | PostgreSQL (async, rustls, migrate) |
+| [sqlx](https://github.com/launchbadge/sqlx) | 0.8 | SQLite (async, migrate) |
 | [reqwest](https://github.com/seanmonstar/reqwest) | 0.12 | HTTP-клиент (rustls, multipart) |
 | [tracing](https://github.com/tokio-rs/tracing) | 0.1 | Структурированные логи |
 | [tracing-subscriber](https://github.com/tokio-rs/tracing) | 0.3 | Форматирование логов + env-filter |
@@ -88,4 +88,3 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 ```
-
