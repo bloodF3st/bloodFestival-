@@ -94,7 +94,7 @@ journalctl -u blood-festival-bot -f
 
 ## Auto token renewal via BloodHarvest
 
-[BloodHarvest](https://github.com/bloodF3st/blood-harvest-src) userbot monitors the bot token and automatically recreates it via @BotFather if it dies — then restarts this service and re-invites the new bot to all active chats.
+[BloodHarvest](https://github.com/bloodF3st/bloodHarvest-) userbot monitors the bot token and automatically recreates it via @BotFather if it dies — then restarts this service and re-invites the new bot to all active chats.
 
 **Add to BloodHarvest `.env`:**
 
