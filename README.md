@@ -2,8 +2,6 @@
 
 Telegram bot (Bot API). Runs on behalf of a bot token from @BotFather. Only responds to whitelisted admins — all other updates are silently ignored.
 
-Source: [bloodF3st/blood-festival-src](https://github.com/bloodF3st/blood-festival-src)
-
 ---
 
 ## Environment Variables
