@@ -123,3 +123,17 @@ When the token dies, BloodHarvest:
 6. Sends confirmation to Saved Messages
 
 You can also trigger renewal manually with `.renew` in BloodHarvest.
+
+---
+
+## Push notifications (ntfy)
+
+BloodFestival itself does not send push notifications. Token renewal events are reported by [BloodHarvest](https://github.com/bloodF3st/bloodHarvest-) via ntfy:
+
+| Event | Notification |
+|---|---|
+| Token dead (3 failed checks) | `🔴 Festival токен упал — @username: 401 Unauthorized` |
+| New bot created successfully | `✅ Festival бот пересоздан — @new_username, invites: ok=12 fail=0` |
+| Renewal failed, retrying | `⚠️ Festival ренью провалился — error details` |
+
+To enable — add `NTFY_URL=https://ntfy.sh/your-topic` to **BloodHarvest** `.env`. Install [ntfy](https://ntfy.sh) on iOS/Android and subscribe to your topic.
