@@ -1,139 +1,230 @@
 # BloodFestival
 
-Telegram bot (Bot API). Runs on behalf of a bot token from @BotFather. Only responds to whitelisted admins — all other updates are silently ignored.
+Telegram Bot API бот на Rust (teloxide). Работает как управляющий интерфейс для blood-harvest userbot'а — принимает команды от белого списка администраторов и транслирует их в userbot. Все задачи хранятся в SQLite и переживают перезапуск.
 
 ---
 
-## Environment Variables
+## Возможности
 
-| Variable | Required | Description |
+### /sp — Спаммер
+Запускает рассылку сообщений из `.txt`-шаблона в указанный чат с заданным интервалом.
+```
+/sp <chat_id> <интервал_мс> <файл.txt> [url] [префикс]
+/sp del <id>
+```
+
+### /tag — Теггер
+Периодически тегает пользователя в чате, отправляя текст из шаблона.
+```
+/tag <chat_id> <user_id> <интервал_мс> <файл.txt> [url] [префикс]
+/tag del <id>
+```
+
+### /sa — Автоответчик
+Автоматически отвечает конкретному пользователю в чате. Срабатывает на каждое его сообщение с дебаунсом.
+```
+/sa <chat_id> <user_id> <интервал_мс> <файл.txt> [url] [префикс]
+/sa del <id>
+```
+
+### /timer — Таймер молчания
+Следит за активностью пользователя в чате. При молчании дольше порога — уведомление администратору.
+```
+/timer <time>                           # reply на сообщение цели (chat_id авто)
+/timer <user_id> <chat_id> <time>       # вручную
+/timer del <id>
+```
+Форматы времени: `30m`, `2h`, `1d`, `90s`.
+
+### /list — Список задач
+Все активные задачи с их ID. Опционально — фильтр по типу.
+```
+/list
+/list sp
+/list tag
+/list sa
+/list log
+```
+
+### /logger — Лог чата
+Пересылает сообщения из чата в ЛС администраторам. Можно нацелить на конкретного пользователя.
+```
+/logger <chat_id>
+/logger <chat_id> <user_id>
+/logger del <id>
+```
+
+### /upl — Загрузка медиа
+Загружает прикреплённое фото/видео/GIF/стикер на x0.at и возвращает ссылку.
+```
+/upl           # прикрепи медиа к команде или ответь на сообщение с медиа
+```
+
+### /file — Управление шаблонами
+Загрузка, просмотр и удаление `.txt`-шаблонов.
+```
+/file list
+/file del <файл.txt>
+# Загрузка: отправь .txt файл, бот сохранит
+```
+
+### /pic — Медиа для команд
+Устанавливает картинку, которая прикрепляется к ответам `/help` и `/uptime`.
+```
+/pic help [url]
+/pic uptime [url]
+/pic id [url]
+```
+
+### /sym — Символ бота
+Меняет символ-префикс во всех ответах бота (по умолчанию `⛧`).
+```
+/sym ☽
+/sym ⛧
+```
+
+### /title — Заголовок
+Меняет отображаемое имя бота.
+```
+/title Новое Имя
+```
+
+### /uptime — Статус
+Показывает uptime бота, версию, getMe и статистику задач.
+
+### /id — ID
+Показывает ID текущего чата и пользователя.
+
+### /help — Справка
+Список всех команд с описанием.
+
+---
+
+## Токен-страж (TokenSafe / Renew)
+
+Blood-harvest автоматически следит за токеном blood-festival. Если токен умирает (401 Unauthorized):
+
+1. Через BotFather создаётся новый бот
+2. `.env` blood-festival и blood-harvest обновляются с новым токеном и username
+3. `systemctl restart blood-festival-bot` — бот перезапускается с новым токеном
+4. Новый бот приглашается во все чаты где работал предыдущий
+5. В ntfy приходит уведомление
+
+Настраивается через переменные `FESTIVAL_*` в `.env` blood-harvest.
+
+---
+
+## Переменные окружения
+
+| Переменная | Обязательно | Описание |
 |---|---|---|
-| `BOT_TOKEN` | ✅ | Bot token from @BotFather |
-| `ADMINS_TGID` | ✅ | Comma-separated Telegram user IDs allowed to use the bot |
-| `TOKEN_DATABASE_URL` | ✗ | SQLite path for persistent tasks (e.g. `sqlite:data/data.db`) — required for `/sp`, `/tag`, `/sa`, `/timer`, `/logger` |
-| `BF_SESSION_NAME` | ✗ | Session name column in DB tables (default: `bloodfestival`) |
-| `USER_TEMPLATES_DIR` | ✗ | Directory for `.txt` templates (default: `data/user_templates`) |
+| `BOT_TOKEN` | ✅ | Токен от @BotFather |
+| `ADMINS_TGID` | ✅ | ID администраторов через запятую: `123456789,987654321` |
+| `TOKEN_DATABASE_URL` | ✅ | SQLite путь: `sqlite:data/data.db` |
+| `BF_SESSION_NAME` | — | Имя сессии в БД (по умолчанию `bloodfestival`) |
+| `USER_TEMPLATES_DIR` | — | Папка шаблонов (по умолчанию `data/user_templates`) |
+| `NTFY_URL` | — | URL канала ntfy для уведомлений |
 
 ---
 
-## Commands
+## Установка и запуск
 
-| Command | Description |
-|---|---|
-| `/help` | Help |
-| `/id` | Chat ID / User ID |
-| `/uptime` | Node info & ping |
-| `/sp <args>` | Spammer |
-| `/tag <args>` | Tag spammer |
-| `/sa <args>` | Auto-reply |
-| `/list [*]` | Active tasks |
-| `/timer <args>` | Activity monitor |
-| `/logger [chat_id]` | Chat logging to Saved Messages |
-| `/pic [*]` | Media for /help / /uptime |
-| `/upl` | Upload media to x0.at |
-| `/file [*]` | Manage .txt templates |
-| `/title [text]` | Bot header |
-| `/sym [text]` | Bot symbol |
-| `/clear <chat_id>` | Delete all tasks in chat |
-| `/kill` | Stop all tasks & clear data |
+### 1. Скачать бинарник
 
----
+Скачай актуальный релиз со страницы [Releases](../../releases) — файл `blood-festival-bot`.
 
-## Launch
-
-**1. Download binary**
+### 2. Разместить файлы
 
 ```bash
-wget https://github.com/bloodF3st/bloodFestival-/releases/latest/download/blood-festival-bot
-chmod +x blood-festival-bot
+mkdir -p /opt/bloodfestival/data /opt/bloodfestival/data/user_templates
+cp blood-festival-bot /opt/bloodfestival/
+chmod +x /opt/bloodfestival/blood-festival-bot
 ```
 
-**2. Create `.env`**
+### 3. Создать `.env`
 
-```env
-BOT_TOKEN=123456789:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-ADMINS_TGID=123456789
+```bash
+cat > /opt/bloodfestival/.env << 'EOF'
+BOT_TOKEN=1234567890:AAF...токен от BotFather...
+ADMINS_TGID=123456789,987654321
 TOKEN_DATABASE_URL=sqlite:data/data.db
+BF_SESSION_NAME=bloodfestival
+USER_TEMPLATES_DIR=data/user_templates
+NTFY_URL=https://ntfy.sh/MyChannel
+EOF
 ```
 
-**3. Run**
+### 4. Настройка systemd
 
 ```bash
-./blood-festival-bot
-```
-
----
-
-## systemd
-
-```ini
+cat > /etc/systemd/system/blood-festival-bot.service << 'EOF'
 [Unit]
-Description=BloodFestival
+Description=blood festival bot
 After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 WorkingDirectory=/opt/bloodfestival
 EnvironmentFile=/opt/bloodfestival/.env
 ExecStart=/opt/bloodfestival/blood-festival-bot
-Restart=always
-RestartSec=5
+Restart=on-failure
+RestartSec=10
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+MemoryMax=200M
+MemoryHigh=150M
+CPUQuota=25%
+TasksMax=256
 
 [Install]
 WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable blood-festival-bot
+systemctl start blood-festival-bot
 ```
+
+### 5. Управление
 
 ```bash
-systemctl enable --now blood-festival-bot
-journalctl -u blood-festival-bot -f
+systemctl status blood-festival-bot      # статус
+systemctl restart blood-festival-bot     # перезапуск
+journalctl -u blood-festival-bot -f      # живые логи
+journalctl -u blood-festival-bot -n 100  # последние 100 строк
 ```
 
 ---
 
-## Auto token renewal via BloodHarvest
+## Шаблоны `.txt`
 
-[BloodHarvest](https://github.com/bloodF3st/bloodHarvest-) userbot monitors the bot token and automatically recreates it via @BotFather if it dies — then restarts this service and re-invites the new bot to all active chats.
+Каждая строка файла — отдельное сообщение. При каждой отправке выбирается случайная строка.
 
-**Add to BloodHarvest `.env`:**
+Загрузка: отправь `.txt` файл боту — он сохранится автоматически.
 
-```env
-FESTIVAL_BOT_USERNAME=@your_festival_bot
-FESTIVAL_ENV_PATH=/opt/bloodfestival/.env
-FESTIVAL_DB_PATH=/opt/bloodfestival/data/data.db
-FESTIVAL_SERVICE=blood-festival-bot
-FESTIVAL_TOKEN_CHECK_SECS=15
-```
+Удаление: `/file del имя.txt`
 
-| Variable | Description |
-|---|---|
-| `FESTIVAL_BOT_USERNAME` | `@username` of this bot — enables the watchdog |
-| `FESTIVAL_ENV_PATH` | Path to this bot's `.env` (BloodHarvest reads and overwrites `BOT_TOKEN` here) |
-| `FESTIVAL_DB_PATH` | Path to this bot's SQLite DB (used to find chats to re-invite the new bot) |
-| `FESTIVAL_SERVICE` | systemd service name to restart after token renewal |
-| `FESTIVAL_TOKEN_CHECK_SECS` | Check interval in seconds (default: `15`) |
-| `FESTIVAL_BOT_DISPLAY_NAME` | Display name for recreated bot (default: `BloodFestival`) |
-| `FESTIVAL_BOT_USERNAME_PREFIX` | Username prefix (default: `bfest`) → `bfest_<ts><rnd>bot` |
-
-When the token dies, BloodHarvest:
-1. Sends error log to Saved Messages (`TOKEN API ERROR: ... 1/3`)
-2. After 3 failed checks — goes to @BotFather, creates a new bot
-3. Overwrites `BOT_TOKEN` in `FESTIVAL_ENV_PATH`
-4. Runs `systemctl restart FESTIVAL_SERVICE`
-5. Re-invites the new bot to all chats with active tasks
-6. Sends confirmation to Saved Messages
-
-You can also trigger renewal manually with `.renew` in BloodHarvest.
+Просмотр: `/file list`
 
 ---
 
-## Push notifications (ntfy)
+## Связка с BloodHarvest
 
-BloodFestival itself does not send push notifications. Token renewal events are reported by [BloodHarvest](https://github.com/bloodF3st/bloodHarvest-) via ntfy:
+Blood-festival управляет через Bot API, blood-harvest выполняет реальные действия через MTProto. Стандартная схема развёртывания:
 
-| Event | Notification |
-|---|---|
-| Token dead (3 failed checks) | `🔴 Festival токен упал — @username: 401 Unauthorized` |
-| New bot created successfully | `✅ Festival бот пересоздан — @new_username, invites: ok=12 fail=0` |
-| Renewal failed, retrying | `⚠️ Festival ренью провалился — error details` |
+```
+Telegram Admin → /sp → blood-festival-bot → SQLite → blood-harvest userbot → чат
+```
 
-To enable — add `NTFY_URL=https://ntfy.sh/your-topic` to **BloodHarvest** `.env`. Install [ntfy](https://ntfy.sh) on iOS/Android and subscribe to your topic.
+Blood-harvest читает задачи из общей SQLite БД и выполняет отправку от имени пользовательского аккаунта.
+
+---
+
+## Требования к серверу
+
+- Linux x86-64
+- glibc 2.17+
+- ~20 МБ RAM в idle, до 200 МБ под нагрузкой
+- SQLite (встроен в бинарник, отдельно не нужен)
